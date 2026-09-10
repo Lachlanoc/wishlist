@@ -37,6 +37,7 @@ onRecordUpdateRequest((e) => {
                 e.record.set("price", original.getString("price"));
                 e.record.set("url", original.getString("url"));
                 e.record.set("image_url", original.getString("image_url"));
+                e.record.set("image", original.getString("image"));
                 e.record.set("notes", original.getString("notes"));
                 e.record.set("priority_order", original.getInt("priority_order"));
                 e.record.set("user", original.getString("user"));

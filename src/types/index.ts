@@ -12,6 +12,7 @@ export interface WishlistItem extends RecordModel {
   title: string;
   url: string;
   image_url: string;
+  image?: string;
   price: string;
   notes: string;
   priority_order: number;
@@ -21,6 +22,16 @@ export interface WishlistItem extends RecordModel {
     user?: User;
     claimed_by?: User;
   };
+}
+
+export interface ItemFormData {
+  title: string;
+  url: string;
+  image_url: string;
+  price: string;
+  notes: string;
+  imageFile?: File | null;
+  clearExistingImage?: boolean;
 }
 
 export interface MetadataResponse {

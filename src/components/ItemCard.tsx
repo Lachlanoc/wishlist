@@ -13,7 +13,7 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { WishlistItem, User } from '../types';
-import { getSafeUrl, isSafeImageUrl } from '../lib/url';
+import { getSafeUrl, getItemImageUrl } from '../lib/url';
 
 interface ItemCardProps {
   item: WishlistItem;
@@ -63,7 +63,7 @@ export default function ItemCard({
   };
 
   const safeUrl = getSafeUrl(item.url);
-  const safeImage = isSafeImageUrl(item.image_url) ? item.image_url : null;
+  const itemImageUrl = getItemImageUrl(item);
 
   return (
     <div
@@ -103,9 +103,9 @@ export default function ItemCard({
 
         {/* Image */}
         <div className="relative w-24 h-24 shrink-0 bg-primary-100 dark:bg-primary-800">
-          {safeImage ? (
+          {itemImageUrl ? (
             <img
-              src={safeImage}
+              src={itemImageUrl}
               alt={item.title}
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
@@ -115,7 +115,7 @@ export default function ItemCard({
               }}
             />
           ) : null}
-          <div className={`absolute inset-0 flex items-center justify-center ${safeImage ? 'hidden' : ''}`}>
+          <div className={`absolute inset-0 flex items-center justify-center ${itemImageUrl ? 'hidden' : ''}`}>
             <ImageOff className="h-8 w-8 text-primary-300 dark:text-primary-600" strokeWidth={1.5} />
           </div>
         </div>

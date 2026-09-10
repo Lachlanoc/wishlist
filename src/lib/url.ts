@@ -1,3 +1,6 @@
+import pb from './pocketbase';
+import { WishlistItem } from '../types';
+
 /**
  * Utility functions for validating and sanitizing user-provided URLs
  * to prevent XSS (e.g. javascript: schemes) and React render crashes from malformed URLs.
@@ -39,12 +42,22 @@ export function getSafeUrl(urlStr?: string | null): SafeUrlResult | null {
 
 /**
  * Checks if an image URL is safe to use in an <img> tag.
- * Restricts to http: and https: protocols only.
+ * Allows http:, https:, local blob: URLs, data:image URLs, and root-relative paths.
  */
 export function isSafeImageUrl(urlStr?: string | null): boolean {
   if (!urlStr || typeof urlStr !== 'string') return false;
   const trimmed = urlStr.trim();
   if (!trimmed) return false;
+
+  // Local object URLs or base64 image data
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:image/')) {
+    return true;
+  }
+
+  // Root-relative paths (e.g. /api/files/...) but not protocol-relative (//)
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    return true;
+  }
 
   try {
     const parsed = new URL(trimmed);
@@ -53,3 +66,27 @@ export function isSafeImageUrl(urlStr?: string | null): boolean {
     return false;
   }
 }
+
+/**
+ * Resolves the displayable image URL for a wishlist item.
+ * Prioritizes the uploaded PocketBase file if available, falling back to external image_url.
+ */
+export function getItemImageUrl(item: WishlistItem): string | null {
+  if (item.image) {
+    try {
+      const fileUrl = pb.files.getURL(item, item.image);
+      if (fileUrl && isSafeImageUrl(fileUrl)) {
+        return fileUrl;
+      }
+    } catch {
+      // Fall through to image_url on error
+    }
+  }
+
+  if (item.image_url && isSafeImageUrl(item.image_url)) {
+    return item.image_url;
+  }
+
+  return null;
+}
+

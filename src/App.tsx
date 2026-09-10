@@ -6,7 +6,7 @@ import pb from './lib/pocketbase';
 import { fireConfetti, fireClaimConfetti } from './lib/confetti';
 import { useToast } from './hooks/useToast';
 import { useDarkMode } from './hooks/useDarkMode';
-import { WishlistItem, User, ViewMode } from './types';
+import { WishlistItem, User, ViewMode, ItemFormData } from './types';
 
 import AuthModal from './components/AuthModal';
 import Navbar from './components/Navbar';
@@ -140,34 +140,47 @@ export default function App() {
   }, []);
 
   // ─── CRUD Operations ───
-  const handleAddItem = useCallback(async (data: {
-    title: string;
-    url: string;
-    image_url: string;
-    price: string;
-    notes: string;
-  }) => {
+  const handleAddItem = useCallback(async (data: ItemFormData) => {
     if (!currentUser) return;
     const maxOrder = myItems.reduce((max, item) => Math.max(max, item.priority_order || 0), 0);
-    await pb.collection('wishlist_items').create({
-      ...data,
-      user: currentUser.id,
-      priority_order: maxOrder + 1,
-    });
+
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('url', data.url);
+    formData.append('image_url', data.image_url);
+    formData.append('price', data.price);
+    formData.append('notes', data.notes);
+    formData.append('user', currentUser.id);
+    formData.append('priority_order', String(maxOrder + 1));
+
+    if (data.imageFile) {
+      formData.append('image', data.imageFile);
+    }
+
+    await pb.collection('wishlist_items').create(formData);
     fireConfetti();
     addToast('Wish added! ✨', 'success');
     await fetchMyItems();
   }, [currentUser, myItems, fetchMyItems, addToast]);
 
-  const handleEditItem = useCallback(async (data: {
-    title: string;
-    url: string;
-    image_url: string;
-    price: string;
-    notes: string;
-  }) => {
+  const handleEditItem = useCallback(async (data: ItemFormData) => {
     if (!editingItem) return;
-    await pb.collection('wishlist_items').update(editingItem.id, data);
+
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('url', data.url);
+    formData.append('image_url', data.image_url);
+    formData.append('price', data.price);
+    formData.append('notes', data.notes);
+
+    if (data.imageFile) {
+      formData.append('image', data.imageFile);
+    } else if (data.clearExistingImage) {
+      // Pass empty string to remove the file from PocketBase record
+      formData.append('image', '');
+    }
+
+    await pb.collection('wishlist_items').update(editingItem.id, formData);
     addToast('Wish updated!', 'success');
     setEditingItem(null);
     await fetchMyItems();

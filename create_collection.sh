@@ -46,6 +46,7 @@ PAYLOAD=$(cat <<EOF
     { "name": "title", "type": "text", "required": true },
     { "name": "url", "type": "url" },
     { "name": "image_url", "type": "url" },
+    { "name": "image", "type": "file", "maxSelect": 1, "maxSize": 5242880, "mimeTypes": ["image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"] },
     { "name": "price", "type": "text" },
     { "name": "notes", "type": "text" },
     { "name": "priority_order", "type": "number" },

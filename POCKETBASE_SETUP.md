@@ -40,7 +40,8 @@ Go to **Collections** → **New collection** and create a collection with:
 | ---------------- | ---------- | -------- | ------------------------------------------ |
 | `title`          | Plain text | ✅ Yes   | Max length: 500                            |
 | `url`            | URL        | No       |                                            |
-| `image_url`      | URL        | No       |                                            |
+| `image_url`      | URL        | No       | External image URL                         |
+| `image`          | File       | No       | Max size: 5MB, Single, MIME types: images  |
 | `price`          | Plain text | No       | Max length: 100                            |
 | `notes`          | Plain text | No       | Max length: 2000                           |
 | `priority_order` | Number     | No       | Default: 0                                 |
