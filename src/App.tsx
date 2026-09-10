@@ -34,6 +34,7 @@ export default function App() {
   const [myItems, setMyItems] = useState<WishlistItem[]>([]);
   const [friendItems, setFriendItems] = useState<WishlistItem[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [itemCounts, setItemCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
 
   // ─── Modals ───
@@ -61,6 +62,7 @@ export default function App() {
     setMyItems([]);
     setFriendItems([]);
     setAllUsers([]);
+    setItemCounts({});
     setViewMode('my-wishlist');
     addToast('Logged out', 'info');
   }, [addToast]);
@@ -96,10 +98,23 @@ export default function App() {
   // ─── Fetch All Users ───
   const fetchAllUsers = useCallback(async () => {
     try {
-      const records = await pb.collection('users').getFullList<User>({
+      const userPromise = pb.collection('users').getFullList<User>({
         sort: 'username',
       });
-      setAllUsers(records);
+      const itemsPromise = pb.collection('wishlist_items').getFullList<{ id: string; user: string }>({
+        fields: 'id,user',
+      }).catch(() => [] as { id: string; user: string }[]);
+
+      const [userRecords, itemRecords] = await Promise.all([userPromise, itemsPromise]);
+      setAllUsers(userRecords);
+
+      const counts: Record<string, number> = {};
+      for (const item of itemRecords) {
+        if (item.user) {
+          counts[item.user] = (counts[item.user] || 0) + 1;
+        }
+      }
+      setItemCounts(counts);
     } catch (err) {
       console.error('Failed to fetch users:', err);
     }
@@ -438,6 +453,7 @@ export default function App() {
               <FriendGrid
                 users={allUsers}
                 currentUserId={currentUser?.id || ''}
+                itemCounts={itemCounts}
                 onSelectFriend={handleSelectFriend}
               />
             )}
