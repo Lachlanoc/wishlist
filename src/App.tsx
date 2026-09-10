@@ -458,7 +458,7 @@ export default function App() {
                 <div>
                   <h1 className="text-2xl font-bold text-black dark:text-white">{selectedFriendName}'s Wishlist</h1>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                    {friendItems.length} {friendItems.length === 1 ? 'wish' : 'wishes'} — claim a gift to mark it as yours
+                    {friendItems.length} {friendItems.length === 1 ? 'wish' : 'wishes'} - claim a gift to indicate you're buying it ({selectedFriendName} can't see)
                   </p>
                 </div>
               </div>
