@@ -30,10 +30,14 @@ export default function FriendGrid({
         const count = itemCounts[friend.id] ?? 0;
 
         return (
-          <button
+          <a
             key={friend.id}
-            onClick={() => onSelectFriend(friend.id, friend.username)}
-            className="group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-primary-300 dark:bg-primary-900 dark:border-zinc-800 dark:hover:border-primary-600 transition-all text-left"
+            href={`#/friends/${friend.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              onSelectFriend(friend.id, friend.username);
+            }}
+            className="group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-primary-300 dark:bg-primary-900 dark:border-zinc-800 dark:hover:border-primary-600 transition-all text-left cursor-pointer"
           >
             <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-300 to-primary-500 flex items-center justify-center text-lg font-bold text-white shrink-0 uppercase">
               {friend.username[0]}
@@ -56,7 +60,7 @@ export default function FriendGrid({
               </p>
             </div>
             <ChevronRight className="h-5 w-5 text-primary-300 group-hover:text-primary-500 dark:text-primary-600 dark:group-hover:text-primary-400 transition-all shrink-0" />
-          </button>
+          </a>
         );
       })}
     </div>

@@ -6,6 +6,7 @@ import pb from './lib/pocketbase';
 import { fireConfetti, fireClaimConfetti } from './lib/confetti';
 import { useToast } from './hooks/useToast';
 import { useDarkMode } from './hooks/useDarkMode';
+import { useRouter } from './hooks/useRouter';
 import { WishlistItem, User, ViewMode, ItemFormData } from './types';
 
 import AuthModal from './components/AuthModal';
@@ -26,8 +27,16 @@ export default function App() {
   );
 
   // ─── Navigation ───
-  const [viewMode, setViewMode] = useState<ViewMode>('my-wishlist');
-  const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
+  const {
+    route,
+    navigate,
+    goBack,
+    openModalWithHistory,
+    closeModalWithHistory,
+  } = useRouter();
+
+  const viewMode = route.view;
+  const selectedFriendId = route.view === 'friend-wishlist' ? route.friendId : null;
   const [selectedFriendName, setSelectedFriendName] = useState<string | null>(null);
 
   // ─── Data ───
@@ -63,9 +72,10 @@ export default function App() {
     setFriendItems([]);
     setAllUsers([]);
     setItemCounts({});
-    setViewMode('my-wishlist');
+    setSelectedFriendName(null);
+    navigate('my-wishlist', undefined, { replace: true });
     addToast('Logged out', 'info');
-  }, [addToast]);
+  }, [navigate, addToast]);
 
   // ─── Fetch My Items ───
   const fetchMyItems = useCallback(async () => {
@@ -128,31 +138,49 @@ export default function App() {
     }
   }, [isLoggedIn, currentUser, fetchMyItems, fetchAllUsers]);
 
-  // ─── Load friend items when navigating to friend wishlist ───
+  // ─── Load friend items & resolve username when navigating to friend wishlist ───
   useEffect(() => {
-    if (viewMode === 'friend-wishlist' && selectedFriendId) {
+    if (route.view === 'friend-wishlist' && route.friendId) {
       setLoading(true);
-      fetchFriendItems(selectedFriendId).finally(() => setLoading(false));
-    }
-  }, [viewMode, selectedFriendId, fetchFriendItems]);
+      fetchFriendItems(route.friendId).finally(() => setLoading(false));
 
-  // ─── Navigation ───
-  const handleNavigate = useCallback((view: ViewMode) => {
-    setViewMode(view);
-    if (view !== 'friend-wishlist') {
-      setSelectedFriendId(null);
+      // Resolve friend's name
+      const friend = allUsers.find((u) => u.id === route.friendId);
+      if (friend) {
+        setSelectedFriendName(friend.username);
+      } else {
+        pb.collection('users')
+          .getOne<User>(route.friendId)
+          .then((user) => setSelectedFriendName(user.username))
+          .catch(() => setSelectedFriendName('Friend'));
+      }
+    } else {
       setSelectedFriendName(null);
     }
-    if (view === 'community') {
+  }, [route.view, route.friendId, allUsers, fetchFriendItems]);
+
+  // ─── Refresh community users when viewing community ───
+  useEffect(() => {
+    if (route.view === 'community') {
       fetchAllUsers();
     }
-  }, [fetchAllUsers]);
+  }, [route.view, fetchAllUsers]);
 
-  const handleSelectFriend = useCallback((friendId: string, friendName: string) => {
-    setSelectedFriendId(friendId);
-    setSelectedFriendName(friendName);
-    setViewMode('friend-wishlist');
-  }, []);
+  // ─── Navigation ───
+  const handleNavigate = useCallback(
+    (view: ViewMode) => {
+      navigate(view);
+    },
+    [navigate]
+  );
+
+  const handleSelectFriend = useCallback(
+    (friendId: string, friendName: string) => {
+      setSelectedFriendName(friendName);
+      navigate('friend-wishlist', friendId);
+    },
+    [navigate]
+  );
 
   // ─── CRUD Operations ───
   const handleAddItem = useCallback(async (data: ItemFormData) => {
@@ -201,17 +229,28 @@ export default function App() {
     await fetchMyItems();
   }, [editingItem, fetchMyItems, addToast]);
 
-  const handleDeleteItem = useCallback((item: WishlistItem) => {
-    setDeletingItem(item);
-  }, []);
+  const closeDeleteModal = useCallback(() => {
+    setDeletingItem(null);
+    closeModalWithHistory();
+  }, [closeModalWithHistory]);
+
+  const handleDeleteItem = useCallback(
+    (item: WishlistItem) => {
+      setDeletingItem(item);
+      openModalWithHistory(() => {
+        setDeletingItem(null);
+      });
+    },
+    [openModalWithHistory]
+  );
 
   const confirmDelete = useCallback(async () => {
     if (!deletingItem) return;
     await pb.collection('wishlist_items').delete(deletingItem.id);
     addToast('Wish removed', 'info');
-    setDeletingItem(null);
+    closeDeleteModal();
     await fetchMyItems();
-  }, [deletingItem, fetchMyItems, addToast]);
+  }, [deletingItem, fetchMyItems, addToast, closeDeleteModal]);
 
   // ─── Reordering ───
   const handleMoveUp = useCallback(async (item: WishlistItem) => {
@@ -304,21 +343,45 @@ export default function App() {
     }
   }, [currentUser, selectedFriendId, fetchFriendItems, addToast]);
 
-  // ─── Open Edit Modal ───
-  const openEditModal = useCallback((item: WishlistItem) => {
-    setEditingItem(item);
-    setShowAddEditModal(true);
-  }, []);
+  // ─── Modal Handlers with Back-Button Integration ───
+  const openEditModal = useCallback(
+    (item: WishlistItem) => {
+      setEditingItem(item);
+      setShowAddEditModal(true);
+      openModalWithHistory(() => {
+        setShowAddEditModal(false);
+        setEditingItem(null);
+      });
+    },
+    [openModalWithHistory]
+  );
 
   const openAddModal = useCallback(() => {
     setEditingItem(null);
     setShowAddEditModal(true);
-  }, []);
+    openModalWithHistory(() => {
+      setShowAddEditModal(false);
+      setEditingItem(null);
+    });
+  }, [openModalWithHistory]);
 
   const closeModal = useCallback(() => {
     setShowAddEditModal(false);
     setEditingItem(null);
-  }, []);
+    closeModalWithHistory();
+  }, [closeModalWithHistory]);
+
+  const openVisibilityModal = useCallback(() => {
+    setShowVisibilityModal(true);
+    openModalWithHistory(() => {
+      setShowVisibilityModal(false);
+    });
+  }, [openModalWithHistory]);
+
+  const closeVisibilityModal = useCallback(() => {
+    setShowVisibilityModal(false);
+    closeModalWithHistory();
+  }, [closeModalWithHistory]);
 
   const handleSaveVisibility = useCallback(async (visibility: 'anyone' | 'restricted', allowedViewers: string[]) => {
     if (!currentUser) return;
@@ -382,7 +445,7 @@ export default function App() {
                   Add Wish
                 </button>
                 <button
-                  onClick={() => setShowVisibilityModal(true)}
+                  onClick={openVisibilityModal}
                   className="flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors"
                   title="Change wishlist visibility"
                 >
@@ -466,8 +529,9 @@ export default function App() {
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => handleNavigate('community')}
+                  onClick={() => goBack('community')}
                   className="rounded-xl p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors"
+                  title="Back to Everyone's Lists"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
@@ -526,7 +590,7 @@ export default function App() {
       {/* Visibility Settings Modal */}
       <VisibilityModal
         isOpen={showVisibilityModal}
-        onClose={() => setShowVisibilityModal(false)}
+        onClose={closeVisibilityModal}
         currentVisibility={currentUser?.visibility || 'anyone'}
         currentAllowedViewers={currentUser?.allowed_viewers || []}
         allUsers={allUsers}
@@ -541,7 +605,7 @@ export default function App() {
         message={`"${deletingItem?.title}" will be permanently removed from your wishlist.`}
         confirmLabel="Delete"
         onConfirm={confirmDelete}
-        onCancel={() => setDeletingItem(null)}
+        onCancel={closeDeleteModal}
       />
 
       {/* Toasts */}

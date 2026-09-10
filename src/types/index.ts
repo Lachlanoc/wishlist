@@ -43,6 +43,11 @@ export interface MetadataResponse {
 
 export type ViewMode = 'my-wishlist' | 'community' | 'friend-wishlist';
 
+export type AppRoute =
+  | { view: 'my-wishlist'; friendId?: undefined }
+  | { view: 'community'; friendId?: undefined }
+  | { view: 'friend-wishlist'; friendId: string };
+
 export interface AppState {
   viewMode: ViewMode;
   selectedFriendId: string | null;

@@ -24,27 +24,39 @@ export default function Navbar({ username, currentView, onNavigate, onLogout, is
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <button
-            onClick={() => onNavigate('my-wishlist')}
-            className="flex items-center gap-2.5 font-bold text-lg text-black dark:text-white hover:text-black dark:hover:text-white transition-colors"
+          <a
+            href="#/"
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate('my-wishlist');
+            }}
+            className="flex items-center gap-2.5 font-bold text-lg text-black dark:text-white hover:text-black dark:hover:text-white transition-colors cursor-pointer"
           >
             <div className="rounded-xl bg-primary-800 dark:bg-primary-200 p-1.5">
               <Gift className="h-5 w-5 text-primary-50 dark:text-primary-900" />
             </div>
             Wishlist
-          </button>
+          </a>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-1">
             {navItems.map(({ view, label, icon: Icon }) => (
-              <button
+              <a
                 key={view}
-                onClick={() => onNavigate(view)}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${ currentView === view ? 'bg-primary-800 dark:bg-primary-200 text-primary-50 dark:text-primary-900 shadow-sm' : 'text-zinc-600 dark:text-zinc-400 hover:bg-primary-100 dark:hover:bg-primary-800 hover:text-primary-800 dark:hover:text-primary-200' }`}
+                href={view === 'community' ? '#/community' : '#/'}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate(view);
+                }}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all cursor-pointer ${
+                  currentView === view
+                    ? 'bg-primary-800 dark:bg-primary-200 text-primary-50 dark:text-primary-900 shadow-sm'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-primary-100 dark:hover:bg-primary-800 hover:text-primary-800 dark:hover:text-primary-200'
+                }`}
               >
                 <Icon className="h-4 w-4" />
                 {label}
-              </button>
+              </a>
             ))}
           </div>
 
@@ -89,17 +101,23 @@ export default function Navbar({ username, currentView, onNavigate, onLogout, is
         <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black px-4 pb-4 pt-2">
           <div className="flex flex-col gap-1">
             {navItems.map(({ view, label, icon: Icon }) => (
-              <button
+              <a
                 key={view}
-                onClick={() => {
+                href={view === 'community' ? '#/community' : '#/'}
+                onClick={(e) => {
+                  e.preventDefault();
                   onNavigate(view);
                   setMobileOpen(false);
                 }}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${ currentView === view ? 'bg-primary-800 dark:bg-primary-200 text-primary-50 dark:text-primary-900' : 'text-zinc-600 dark:text-zinc-400 hover:bg-primary-100 dark:hover:bg-primary-800' }`}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all cursor-pointer ${
+                  currentView === view
+                    ? 'bg-primary-800 dark:bg-primary-200 text-primary-50 dark:text-primary-900'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-primary-100 dark:hover:bg-primary-800'
+                }`}
               >
                 <Icon className="h-4 w-4" />
                 {label}
-              </button>
+              </a>
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 pt-3">
