@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Plus, ArrowLeft, RefreshCw, Settings } from 'lucide-react';
+import { Plus, ArrowLeft, RefreshCw, Settings, LogIn, Gift, Sun, Moon, Lock, Share2 } from 'lucide-react';
 import pb from './lib/pocketbase';
 import { fireConfetti, fireClaimConfetti } from './lib/confetti';
 import { useToast } from './hooks/useToast';
@@ -38,6 +38,7 @@ export default function App() {
   const viewMode = route.view;
   const selectedFriendId = route.view === 'friend-wishlist' ? route.friendId : null;
   const [selectedFriendName, setSelectedFriendName] = useState<string | null>(null);
+  const [friendFetchError, setFriendFetchError] = useState<string | null>(null);
 
   // ─── Data ───
   const [myItems, setMyItems] = useState<WishlistItem[]>([]);
@@ -51,6 +52,7 @@ export default function App() {
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
   const [deletingItem, setDeletingItem] = useState<WishlistItem | null>(null);
   const [showVisibilityModal, setShowVisibilityModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // ─── Toast ───
   const { toasts, addToast, removeToast } = useToast();
@@ -93,15 +95,18 @@ export default function App() {
 
   // ─── Fetch Friend Items ───
   const fetchFriendItems = useCallback(async (friendId: string) => {
+    setFriendFetchError(null);
     try {
       const records = await pb.collection('wishlist_items').getFullList<WishlistItem>({
         filter: `user = "${friendId}"`,
         sort: 'priority_order',
-        expand: 'claimed_by',
+        expand: pb.authStore.isValid ? 'claimed_by' : undefined,
       });
       setFriendItems(records);
     } catch (err) {
       console.error('Failed to fetch friend items:', err);
+      setFriendFetchError('Unable to load wishlist');
+      setFriendItems([]);
     }
   }, []);
 
@@ -142,6 +147,7 @@ export default function App() {
   useEffect(() => {
     if (route.view === 'friend-wishlist' && route.friendId) {
       setLoading(true);
+      setFriendFetchError(null);
       fetchFriendItems(route.friendId).finally(() => setLoading(false));
 
       // Resolve friend's name
@@ -156,6 +162,7 @@ export default function App() {
       }
     } else {
       setSelectedFriendName(null);
+      setFriendFetchError(null);
     }
   }, [route.view, route.friendId, allUsers, fetchFriendItems]);
 
@@ -403,8 +410,35 @@ export default function App() {
     }
   }, [currentUser, addToast]);
 
-  // ─── Render Auth Screen ───
-  if (!isLoggedIn) {
+  const handleShareWishlist = useCallback(() => {
+    if (!currentUser) return;
+    const shareUrl = `${window.location.origin}/#/friends/${currentUser.id}`;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(shareUrl)
+        .then(() => addToast('Wishlist link copied to clipboard! 📋', 'success'))
+        .catch(() => addToast('Failed to copy link', 'error'));
+    } else {
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        addToast('Wishlist link copied to clipboard! 📋', 'success');
+      } catch {
+        addToast('Failed to copy link', 'error');
+      }
+      document.body.removeChild(textArea);
+    }
+  }, [currentUser, addToast]);
+
+  // ─── Public View Detection ───
+  const isPublicView = !isLoggedIn && route.view === 'friend-wishlist';
+
+  // ─── Render Auth Screen (unless viewing a public wishlist) ───
+  if (!isLoggedIn && !isPublicView) {
     return (
       <>
         <AuthModal onAuthenticated={handleAuthenticated} addToast={addToast} />
@@ -416,14 +450,45 @@ export default function App() {
   // ─── Render Main App ───
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
-      <Navbar
-        username={currentUser?.username || ''}
-        currentView={viewMode}
-        onNavigate={handleNavigate}
-        onLogout={handleLogout}
-        isDark={isDark}
-        onToggleDark={toggleDark}
-      />
+      {isPublicView ? (
+        <nav className="sticky top-0 z-40 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-black/80 backdrop-blur-xl">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 items-center justify-between">
+              <div className="flex items-center gap-2.5 font-bold text-lg text-black dark:text-white">
+                <div className="rounded-xl bg-primary-800 dark:bg-primary-200 p-1.5">
+                  <Gift className="h-5 w-5 text-primary-50 dark:text-primary-900" />
+                </div>
+                Wishlist
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleDark}
+                  className="rounded-xl p-2 text-zinc-500 dark:text-zinc-400 hover:bg-primary-100 dark:hover:bg-primary-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                  title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center gap-2 rounded-xl bg-primary-800 dark:bg-primary-200 px-4 py-2 text-sm font-semibold text-primary-50 dark:text-primary-900 shadow-sm hover:bg-primary-900 dark:hover:bg-primary-300 transition-colors"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign In
+                </button>
+              </div>
+            </div>
+          </div>
+        </nav>
+      ) : (
+        <Navbar
+          username={currentUser?.username || ''}
+          currentView={viewMode}
+          onNavigate={handleNavigate}
+          onLogout={handleLogout}
+          isDark={isDark}
+          onToggleDark={toggleDark}
+        />
+      )}
 
       <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
         {/* ═══ My Wishlist ═══ */}
@@ -443,6 +508,14 @@ export default function App() {
                 >
                   <Plus className="h-4 w-4" />
                   Add Wish
+                </button>
+                <button
+                  onClick={handleShareWishlist}
+                  className="flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 sm:px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors"
+                  title="Copy share link"
+                >
+                  <Share2 className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+                  <span className="hidden sm:inline">Share</span>
                 </button>
                 <button
                   onClick={openVisibilityModal}
@@ -521,17 +594,22 @@ export default function App() {
           <>
             <div className="flex items-start sm:items-center justify-between gap-2 mb-8">
               <div className="flex items-start sm:items-center gap-3 min-w-0">
-                <button
-                  onClick={() => goBack('community')}
-                  className="rounded-xl p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors shrink-0 mt-0.5 sm:mt-0"
-                  title="Back to Everyone's Lists"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </button>
+                {!isPublicView && (
+                  <button
+                    onClick={() => goBack('community')}
+                    className="rounded-xl p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors shrink-0 mt-0.5 sm:mt-0"
+                    title="Back to Everyone's Lists"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
+                )}
                 <div className="min-w-0">
                   <h1 className="text-xl sm:text-2xl font-bold text-black dark:text-white break-words">{selectedFriendName}'s Wishlist</h1>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                    {friendItems.length} {friendItems.length === 1 ? 'wish' : 'wishes'} - claim a gift to indicate you're buying it ({selectedFriendName} can't see)
+                    {isPublicView
+                      ? `${friendItems.length} ${friendItems.length === 1 ? 'wish' : 'wishes'}`
+                      : `${friendItems.length} ${friendItems.length === 1 ? 'wish' : 'wishes'} - claim a gift to indicate you're buying it (${selectedFriendName} can't see)`
+                    }
                   </p>
                 </div>
               </div>
@@ -544,7 +622,33 @@ export default function App() {
               </button>
             </div>
 
-            {friendItems.length === 0 ? (
+            {/* Sign-in banner for public viewers */}
+            {isPublicView && (
+              <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-primary-50/50 dark:bg-primary-900/30 px-5 py-4">
+                <p className="text-sm text-zinc-600 dark:text-zinc-300">
+                  Sign in to claim gifts and create your own wishlist
+                </p>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center gap-2 rounded-xl bg-primary-800 dark:bg-primary-200 px-4 py-2 text-sm font-semibold text-primary-50 dark:text-primary-900 shadow-sm hover:bg-primary-900 dark:hover:bg-primary-300 transition-colors shrink-0"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign In
+                </button>
+              </div>
+            )}
+
+            {friendFetchError ? (
+              <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+                <div className="rounded-full bg-primary-100 dark:bg-primary-800 p-6 mb-6">
+                  <Lock className="h-12 w-12 text-zinc-500 dark:text-primary-500" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-xl font-semibold text-black dark:text-white mb-2">Wishlist not available</h3>
+                <p className="text-zinc-500 dark:text-zinc-400 max-w-sm">
+                  This wishlist may be private or does not exist.
+                </p>
+              </div>
+            ) : friendItems.length === 0 ? (
               <EmptyState type="friend-wishlist" friendName={selectedFriendName || undefined} />
             ) : (
               <div className="space-y-4">
@@ -554,8 +658,8 @@ export default function App() {
                     item={item}
                     isOwner={false}
                     currentUserId={currentUser?.id || ''}
-                    onClaim={handleClaim}
-                    onUnclaim={handleUnclaim}
+                    onClaim={isPublicView ? undefined : handleClaim}
+                    onUnclaim={isPublicView ? undefined : handleUnclaim}
                   />
                 ))}
               </div>
@@ -600,6 +704,18 @@ export default function App() {
         onConfirm={confirmDelete}
         onCancel={closeDeleteModal}
       />
+
+      {/* Auth Modal overlay for public viewers */}
+      {showAuthModal && (
+        <AuthModal
+          onAuthenticated={() => {
+            setShowAuthModal(false);
+            handleAuthenticated();
+          }}
+          addToast={addToast}
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
 
       {/* Toasts */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />

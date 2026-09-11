@@ -4,11 +4,23 @@
  * PocketBase hooks for Wishlist App security & privacy.
  */
 
-// 1. Privacy Protection: When an owner views their own items, mask who claimed the gift
+// 1. Privacy Protection:
+//    - Anonymous (unauthenticated) viewers: strip claimed_by entirely
+//    - Owner viewing their own items: mask who claimed the gift (keep "claimed" so UI knows it's taken)
 onRecordEnrich((e) => {
     try {
         const auth = e.requestInfo?.auth;
-        if (auth && e.record && e.record.getString("user") === auth.id) {
+
+        // Anonymous viewer — strip claim info completely
+        if (!auth) {
+            e.record.set("claimed_by", "");
+            const expanded = e.record.expand();
+            if (expanded && expanded["claimed_by"]) {
+                delete expanded["claimed_by"];
+            }
+        }
+        // Owner viewing their own items — mask the claimer's identity
+        else if (e.record && e.record.getString("user") === auth.id) {
             if (e.record.getString("claimed_by")) {
                 // Keep it non-empty so the frontend knows it's claimed,
                 // but mask the buyer's user ID so the owner cannot inspect who bought it.

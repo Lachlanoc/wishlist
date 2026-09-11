@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Globe, Lock, Search, Check, Users, Loader2 } from 'lucide-react';
+import { X, Globe, Lock, Search, Check, Users, Loader2, Copy } from 'lucide-react';
 import { User } from '../types';
 
 interface VisibilityModalProps {
@@ -25,6 +25,18 @@ export default function VisibilityModal({
   const [selectedIds, setSelectedIds] = useState<string[]>(currentAllowedViewers);
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const shareUrl = typeof window !== 'undefined' && currentUserId
+    ? `${window.location.origin}/#/friends/${currentUserId}`
+    : '';
+
+  const handleCopyLink = () => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Sync state when modal opens or initial values change
   useEffect(() => {
@@ -131,10 +143,39 @@ export default function VisibilityModal({
                   />
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                  Anyone on the platform can browse your wishlist and claim items for you.
+                  Anyone with your link can view your wishlist, even if they don't have an account.
                 </p>
               </div>
             </label>
+
+            {/* Public Link Box */}
+            {visibility === 'anyone' && shareUrl && (
+              <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-black dark:text-white">Public Wishlist Link</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5 select-all">
+                    {shareUrl}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-1.5 rounded-lg bg-white dark:bg-primary-700 px-3 py-1.5 text-xs font-semibold text-black dark:text-white shadow-sm hover:bg-zinc-100 dark:hover:bg-primary-600 border border-zinc-200 dark:border-zinc-600 transition-colors shrink-0"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      Copy Link
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
 
             {/* Restricted Option */}
             <label
