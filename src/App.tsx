@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Plus, ArrowLeft, RefreshCw, Globe, Lock } from 'lucide-react';
+import { Plus, ArrowLeft, RefreshCw, Settings } from 'lucide-react';
 import pb from './lib/pocketbase';
 import { fireConfetti, fireClaimConfetti } from './lib/confetti';
 import { useToast } from './hooks/useToast';
@@ -429,14 +429,14 @@ export default function App() {
         {/* ═══ My Wishlist ═══ */}
         {viewMode === 'my-wishlist' && (
           <>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
                 <h1 className="text-2xl font-bold text-black dark:text-white">My Wishlist</h1>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                   {myItems.length} {myItems.length === 1 ? 'wish' : 'wishes'} — drag or use arrows to prioritize
                 </p>
               </div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 shrink-0">
                 <button
                   onClick={openAddModal}
                   className="flex items-center gap-2 rounded-2xl bg-primary-800 dark:bg-primary-200 px-5 py-2.5 text-sm font-semibold text-primary-50 dark:text-primary-900 shadow-md hover:bg-primary-900 dark:hover:bg-primary-300 transition-colors"
@@ -446,20 +446,13 @@ export default function App() {
                 </button>
                 <button
                   onClick={openVisibilityModal}
-                  className="flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors"
-                  title="Change wishlist visibility"
+                  className="flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 sm:px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors"
+                  title={currentUser?.visibility === 'restricted' ? 'Only certain people' : 'Everyone'}
                 >
-                  {currentUser?.visibility === 'restricted' ? (
-                    <>
-                      <Lock className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
-                      <span>Only certain people</span>
-                    </>
-                  ) : (
-                    <>
-                      <Globe className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
-                      <span>Everyone</span>
-                    </>
-                  )}
+                  <Settings className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+                  <span className="hidden sm:inline">
+                    {currentUser?.visibility === 'restricted' ? 'Only certain people' : 'Everyone'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -526,17 +519,17 @@ export default function App() {
         {/* ═══ Friend's Wishlist ═══ */}
         {viewMode === 'friend-wishlist' && selectedFriendId && (
           <>
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
+            <div className="flex items-start sm:items-center justify-between gap-2 mb-8">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
                 <button
                   onClick={() => goBack('community')}
-                  className="rounded-xl p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors"
+                  className="rounded-xl p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors shrink-0 mt-0.5 sm:mt-0"
                   title="Back to Everyone's Lists"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
-                <div>
-                  <h1 className="text-2xl font-bold text-black dark:text-white">{selectedFriendName}'s Wishlist</h1>
+                <div className="min-w-0">
+                  <h1 className="text-xl sm:text-2xl font-bold text-black dark:text-white break-words">{selectedFriendName}'s Wishlist</h1>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                     {friendItems.length} {friendItems.length === 1 ? 'wish' : 'wishes'} - claim a gift to indicate you're buying it ({selectedFriendName} can't see)
                   </p>
@@ -544,7 +537,7 @@ export default function App() {
               </div>
               <button
                 onClick={() => selectedFriendId && fetchFriendItems(selectedFriendId)}
-                className="rounded-xl p-2.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors"
+                className="rounded-xl p-2.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors shrink-0"
                 title="Refresh"
               >
                 <RefreshCw className="h-4 w-4" />
