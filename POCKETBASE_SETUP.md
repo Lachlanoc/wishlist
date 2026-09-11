@@ -1,4 +1,4 @@
-# !!THIS GUIDE HAS NOT BEEN UPDATED AS THE REST OF THE PROJECT HAS BEWARE
+# THIS GUIDE HAS BEEN AUTO UPDATED BY AI AND AS SUCH IT'S CONTENTS MAY BE OUT OF DATE
 
 # PocketBase Setup Guide
 
@@ -66,13 +66,13 @@ Set the following API rules on the `wishlist_items` collection. Go to the collec
 
 ```
 // Owner can view, or public lists, or restricted lists if current user is in allowed_viewers
-@request.auth.id != "" && (user = @request.auth.id || user.visibility = "" || user.visibility = "anyone" || user.allowed_viewers ?= @request.auth.id)
+user.visibility = "" || user.visibility = "anyone" || (@request.auth.id != "" && (user = @request.auth.id || user.allowed_viewers.id ?= @request.auth.id || user.allowed_viewers ~ @request.auth.id))
 ```
 
 ### View Rule
 
 ```
-@request.auth.id != "" && (user = @request.auth.id || user.visibility = "" || user.visibility = "anyone" || user.allowed_viewers ?= @request.auth.id)
+user.visibility = "" || user.visibility = "anyone" || (@request.auth.id != "" && (user = @request.auth.id || user.allowed_viewers.id ?= @request.auth.id || user.allowed_viewers ~ @request.auth.id))
 ```
 
 ### Create Rule

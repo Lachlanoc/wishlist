@@ -121,8 +121,8 @@ async function run() {
                         }
                     }
                 ],
-                listRule: "@request.auth.id != '' && (user = @request.auth.id || user.visibility = '' || user.visibility = 'anyone' || user.allowed_viewers ?= @request.auth.id)",
-                viewRule: "@request.auth.id != '' && (user = @request.auth.id || user.visibility = '' || user.visibility = 'anyone' || user.allowed_viewers ?= @request.auth.id)",
+                listRule: "user.visibility = '' || user.visibility = 'anyone' || (@request.auth.id != '' && (user = @request.auth.id || user.allowed_viewers.id ?= @request.auth.id || user.allowed_viewers ~ @request.auth.id))",
+                viewRule: "user.visibility = '' || user.visibility = 'anyone' || (@request.auth.id != '' && (user = @request.auth.id || user.allowed_viewers.id ?= @request.auth.id || user.allowed_viewers ~ @request.auth.id))",
                 createRule: "@request.auth.id != '' && user = @request.auth.id",
                 updateRule: "@request.auth.id != '' && (user = @request.auth.id || (claimed_by = '' && @request.body.claimed_by = @request.auth.id) || (claimed_by = @request.auth.id && @request.body.claimed_by = ''))",
                 deleteRule: "@request.auth.id != '' && user = @request.auth.id"
